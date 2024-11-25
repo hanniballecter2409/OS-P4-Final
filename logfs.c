@@ -182,7 +182,7 @@ int logfs_append(struct logfs *fs, const void *buf, uint64_t len) {
         free_space = fs->write_limit - (uint64_t)fs->write_queue - (fs->write_head - fs->write_tail); /* Enough space availale -> head in front of tail */
     }
     if(len >= free_space) {
-        reader_function(fs); 
+        reader_function(fs); /*Reader function called to invoke write to empty our write buf by flushing*/
     }
 
     if(fs->write_head + len <= fs->write_limit){
