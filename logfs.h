@@ -80,13 +80,4 @@ int logfs_append(struct logfs *logfs, const void *buf, uint64_t len);
 
 int logfs_flush(struct logfs *logfs);
 
-void
-logfs_backup(struct logfs *fs);
-
-struct backup *
-logfs_restore(struct logfs *fs);
-
-void
-logfs_backup_flush(struct logfs *fs);
-
 #endif /* _LOGFS_H_ */

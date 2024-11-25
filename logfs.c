@@ -50,35 +50,6 @@ void *writer_function(void * arg);
 void *reader_function(struct logfs *fs);
 
 
-struct backup *
-logfs_restore(struct logfs *fs){
-    struct backup * bkup = device_restore(fs->device);
-
-    if(bkup->valid){
-        memcpy(&fs->device_limit, (void*)bkup->limit, sizeof(uint64_t));
-        bkup->limit += sizeof(uint64_t);
-    }
-    return bkup;
-}
-
-void
-logfs_backup_flush(struct logfs *fs){
-    device_flush(fs->device);
-}
-
-void
-logfs_backup(struct logfs *fs){
-    device_backup(fs->device);
-
-
-    struct backup * bkup = get_backup();
-    reader_function(fs);
-    memcpy((void*)bkup->limit, &fs->device_limit, sizeof(uint64_t));
-    bkup->limit += sizeof(uint64_t);
-    return;
-}
-
-
 struct logfs *logfs_open(const char *pathname) {
     struct logfs *fs;
 
@@ -203,21 +174,21 @@ int logfs_read(struct logfs *fs, void *buf, uint64_t off, uint64_t len) {
 
 int logfs_append(struct logfs *fs, const void *buf, uint64_t len) {
     uint64_t free_space;
-    if(fs->write_head < fs->write_tail)
+    if(fs->write_head < fs->write_tail) 
     {
-        free_space = fs->write_tail - fs->write_head;
+        free_space = fs->write_tail - fs->write_head; /*Free space lies in between head (behind) and tail*/
     }
     else{
-        free_space = fs->write_limit - (uint64_t)fs->write_queue - (fs->write_head - fs->write_tail);
+        free_space = fs->write_limit - (uint64_t)fs->write_queue - (fs->write_head - fs->write_tail); /* Enough space availale -> head in front of tail */
     }
     if(len >= free_space) {
-        reader_function(fs);
+        reader_function(fs); 
     }
 
     if(fs->write_head + len <= fs->write_limit){
         memcpy((void*)fs->write_head, buf, len);
         fs->write_head += len;
-        fs->child_allow = 1;
+        fs->child_allow = 1; /* Can start flushing from write buffer to device*/
         pthread_cond_signal(&fs->can_write);
         return 0;
     }
@@ -227,8 +198,8 @@ int logfs_append(struct logfs *fs, const void *buf, uint64_t len) {
     len -= free_space;
     memcpy((void*)fs->write_queue, buf+free_space , len);
     fs->write_head = (uint64_t)fs->write_queue + len;
-    fs->child_allow = 1;
-    pthread_cond_signal(&fs->can_write);
+    fs->child_allow = 1; /* Can start flushing from write buffer to device*/
+    pthread_cond_signal(&fs->can_write); /* Send signal to writer that data is available to flush */
     return 0;
 }
 
@@ -308,7 +279,8 @@ void *writer_function(void *arg) {
 
     while (!fs->should_exit) {
         pthread_mutex_lock(&fs->mutex);
-        while ((!fs->should_exit) && !fs->child_allow) {
+        /* Program should not exit and Child Process not allowed i.e. Read not allowed then we can write */
+        while ((!fs->should_exit) && !fs->child_allow) { 
             pthread_cond_wait(&fs->can_write, &fs->mutex);
         }
         logfs_flush(fs);
