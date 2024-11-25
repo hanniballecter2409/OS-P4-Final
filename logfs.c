@@ -188,13 +188,13 @@ int logfs_read(struct logfs *fs, void *buf, uint64_t off, uint64_t len) {
     }
 
     file_size = device_size(fs->device);
-    if (len > file_size - off) {
-        TRACE("read exceeds file size");
+    if (len + off > file_size) {
+        TRACE("The given read length exceeds device size");
         return -1;
     }
 
     if((off >= fs->read_start_addr) && (len <= (fs->read_end_addr - fs->read_start_addr)))
-    {   read_addr = ((uint64_t)fs->read_queue) +  off - fs->read_start_addr;
+    {   read_addr = off;
         memcpy(buf,(void*)read_addr, len);
         return 0;
     }
@@ -208,7 +208,7 @@ int logfs_append(struct logfs *fs, const void *buf, uint64_t len) {
         free_space = fs->write_tail - fs->write_head;
     }
     else{
-        free_space = fs->write_limit - (uint64_t)fs->write_queue - (fs->write_tail - fs->write_head);
+        free_space = fs->write_limit - (uint64_t)fs->write_queue - (fs->write_head - fs->write_tail);
     }
     if(len >= free_space) {
         reader_function(fs);
