@@ -194,7 +194,7 @@ int logfs_read(struct logfs *fs, void *buf, uint64_t off, uint64_t len) {
     }
 
     if((off >= fs->read_start_addr) && (len <= (fs->read_end_addr - fs->read_start_addr)))
-    {   read_addr = ((uint64_t)fs->read_queue) +  off - fs->read_start_addr;
+    {   read_addr = ((uint64_t)fs->read_queue) +  off;
         memcpy(buf,(void*)read_addr, len);
         return 0;
     }
